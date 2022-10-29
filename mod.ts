@@ -1,7 +1,6 @@
-import * as path from "https://deno.land/std@0.161.0/path/mod.ts";
 import * as io from "https://deno.land/std@0.161.0/io/mod.ts";
+import { walk } from "https://deno.land/std@0.161.0/fs/walk.ts";
 
-const ignore = new Set([".git", "node_modules"]);
 const encoder = new TextEncoder();
 
 type GrepResult = {
@@ -16,27 +15,24 @@ function encode(result: GrepResult): Uint8Array {
 }
 
 async function grep(
-  dir: string,
+  root: string,
   word: string,
 ): Promise<GrepResult[]> {
-  let result: GrepResult[] = [];
-  for await (const entry of Deno.readDir(dir)) {
-    const name = path.join(dir, entry.name);
-    if (entry.isDirectory && !ignore.has(entry.name)) {
-      result = result.concat(await grep(name, word));
-    } else if (entry.isFile) {
-      const file = await Deno.open(name);
+  const result = [];
+  for await (const entry of walk(root, { skip: [/^\.git/] })) {
+    if (entry.isFile) {
+      const file = await Deno.open(entry.path);
       try {
-        let linenum = 1;
+        let line = 1;
         for await (const text of io.readLines(file)) {
           if (text.match(word)) {
             result.push({
-              fileName: name,
-              line: linenum,
+              fileName: entry.path,
+              line: line,
               text: text,
             });
           }
-          linenum++;
+          line++;
         }
       } finally {
         file.close();
@@ -46,15 +42,12 @@ async function grep(
   return result;
 }
 
-const [word, dir] = Deno.args;
-const result = await grep(dir, word);
+const [word, root] = Deno.args;
 
+const result = await grep(root, word);
 const bw = new io.BufWriter(Deno.stdout);
 
 for (const entry of result) {
   await bw.write(encode(entry));
-  if (bw.buffered() === 1000) {
-    await bw.flush();
-  }
 }
-bw.flush();
+await bw.flush();
