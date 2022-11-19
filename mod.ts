@@ -1,5 +1,5 @@
-import * as io from "https://deno.land/std@0.161.0/io/mod.ts";
-import { walk } from "https://deno.land/std@0.161.0/fs/walk.ts";
+import * as io from "https://deno.land/std@0.165.0/io/mod.ts";
+import { walk } from "https://deno.land/std@0.165.0/fs/walk.ts";
 
 const encoder = new TextEncoder();
 
