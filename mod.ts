@@ -9,12 +9,12 @@ type GrepResult = {
   text: string;
 };
 
-function encode(result: GrepResult): Uint8Array {
+export function encode(result: GrepResult): Uint8Array {
   const text = `${result.fileName}:${result.line}:${result.text}\n`;
   return encoder.encode(text);
 }
 
-async function grep(
+export async function grep(
   root: string,
   word: string,
 ): Promise<GrepResult[]> {
